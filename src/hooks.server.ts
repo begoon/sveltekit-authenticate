@@ -5,15 +5,28 @@ import { SvelteKitAuth } from "@auth/sveltekit";
 import { ManagementClient } from "auth0";
 
 export const handle = SvelteKitAuth({
-  providers: [
-    GitHub({ clientId: env.GITHUB_ID, clientSecret: env.GITHUB_SECRET }),
-    Auth({
-      clientId: env.AUTH0_ID,
-      clientSecret: env.AUTH0_SECRET,
-      issuer: "https://" + env.AUTH0_DOMAIN
-    }),
-  ],
-})
+    providers: [
+        GitHub({ clientId: env.GITHUB_ID, clientSecret: env.GITHUB_SECRET }),
+        Auth({
+            clientId: env.AUTH0_ID,
+            clientSecret: env.AUTH0_SECRET,
+            issuer: "https://" + env.AUTH0_DOMAIN,
+        }),
+    ],
+    callbacks: {
+        async signIn(params) {
+            console.log("signIn", params);
+            if (params.account?.provider === "auth0") {
+                const sub = params.profile?.sub || "?";
+                const roles = await Auth0Management.getUserRoles({
+                    id: sub,
+                });
+                console.log("roles", roles);
+            }
+            return true;
+        },
+    },
+});
 
 export const Auth0Management = new ManagementClient({
     domain: env.AUTH0_DOMAIN,
